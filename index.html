@@ -1,13 +1,539 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSSU-Parkerpuram</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV Table Viewer</title>
+<style>
+:root{
+  --navy:#2c3e50;
+  --slate:#46617c;
+  --slate-light:#6e8aa4;
+  --border:#ddd;
+  --shadow:0 1px 3px rgba(0,0,0,.15);
+}
+*{box-sizing:border-box}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  margin:0;
+  padding:.5rem;
+  background:#f5f5f5;
+  color:#222;
+  font-size:14px;
+}
+h1{font-size:1rem;margin:0 0 .5rem}
+.table-wrap{
+  overflow-x:auto;background:#fff;box-shadow:var(--shadow);
+  border-radius:4px;-webkit-overflow-scrolling:touch
+}
+table{border-collapse:collapse;width:100%;table-layout:fixed}
+th,td{
+  border:1px solid var(--border);padding:4px 6px;text-align:left;
+  white-space:normal;overflow-wrap:break-word;word-break:break-word
+}
+th{
+  background:#e9edf1;color:#222;border-bottom:3px solid var(--navy);
+  position:sticky;top:0
+}
+tr:nth-child(even){background:#f9f9f9}
+tr.active,tr:hover{background:#eef6ff}
+#error{color:#b00020;font-weight:bold;margin-bottom:.75rem}
+#csv-container{
+  background:#fff;border-radius:4px;box-shadow:var(--shadow);overflow:hidden
+}
+.accordion-item{border-bottom:1px solid var(--border)}
+.accordion-item:last-child{border-bottom:none}
+.accordion-item>.accordion-heading{
+  padding:6px 8px;font-weight:bold;background:#eef1f4;color:#222
+}
+.accordion-item .accordion-body{padding-left:0}
+.accordion-item.level-0>.accordion-heading{
+  background:var(--navy);color:#fff;text-align:center
+}
+.accordion-item.level-1>.accordion-heading{background:var(--slate);color:#fff}
+.accordion-item.level-2>.accordion-heading{background:var(--slate-light);color:#fff}
+#csv-container .table-wrap{box-shadow:none;border-radius:0;margin:0}
+
+.home-program-list{display:flex;flex-direction:column;gap:.6rem}
+.home-program-card{
+  background:#fff;border-radius:8px;box-shadow:var(--shadow);
+  overflow:hidden;border-left:4px solid var(--navy)
+}
+.home-program-stage{
+  background:var(--navy);color:#fff;font-weight:bold;padding:8px 12px;font-size:.95rem
+}
+.home-program-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.home-program-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.home-program-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#888}
+.home-program-value{font-weight:bold;text-align:right}
+.home-program-ongoing .home-program-label{
+  display:flex;align-items:center;gap:4px;color:var(--navy)
+}
+.home-program-ongoing .home-program-label::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:#2e9e5b
+}
+.home-program-ongoing .home-program-value{color:var(--navy);font-size:1.05rem}
+.home-program-upcoming .home-program-value{color:#555;font-weight:normal}
+.home-program-time{font-size:.8rem;color:#888;text-align:right}
+
+@media (min-width:600px){
+  .home-program-list{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+  body{padding:1.5rem;font-size:16px}
+  h1{font-size:1.3rem}
+}
+@media (min-width:900px){
+  body{max-width:960px;margin:0 auto;padding:2rem}
+  h1{font-size:1.4rem}
+}
+
+#points-table-section{
+  margin-top:1.5rem;background:#fff;border-radius:4px;
+  border-top:4px solid var(--navy);padding:.75rem;box-shadow:var(--shadow)
+}
+#points-table-section h2{
+  font-size:.95rem;margin:0 0 .5rem;color:var(--navy);
+  text-transform:uppercase;letter-spacing:.05em
+}
+#points-table-section .table-wrap{box-shadow:none}
+#points-table-section th{background:var(--navy);color:#fff;border-bottom:3px solid var(--slate)}
+#points-table-section tbody tr:first-child{background:#eef6ff;font-weight:bold}
+#points-table-section tbody tr:first-child td:last-child{color:var(--navy)}
+
+#tab-bar{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
+.tab-btn{
+  flex:1 1 auto;min-width:0;padding:.5rem .75rem;border:1px solid var(--border);
+  border-radius:4px;background:#fff;color:var(--navy);font-weight:bold;
+  font-size:.9rem;text-align:center;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;cursor:pointer
+}
+.tab-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tab-btn.active:nth-child(2){background:var(--slate);color:#fff}
+#loading{padding:1rem;text-align:center;color:#666}
+#print-btn{
+  display:flex;align-items:center;justify-content:center;margin:0 0 .75rem auto;
+  width:36px;height:36px;padding:0;background:var(--navy);color:#fff;
+  border:none;border-radius:50%;cursor:pointer
+}
+#print-btn svg{width:18px;height:18px;fill:currentColor}
+
+@media print{
+  #print-btn,#tab-bar{display:none}
+  body{background:#fff;max-width:none;padding:0}
+  .table-wrap,#csv-container,#points-table-section{box-shadow:none}
+  th{position:static}
+  .accordion-item{break-inside:avoid}
+}
+</style>
 </head>
 <body>
-    <!-- Main heading -->
-    <h1>DSSU-Parkerpuram</h1>
-    <h1>2026</h1>
+
+<button id="print-btn" type="button" aria-label="Print / Save as PDF" title="Print / Save as PDF">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path d="M6 9V3h12v6h1a3 3 0 0 1 3 3v5h-4v4H6v-4H2v-5a3 3 0 0 1 3-3h1zm2-4v4h8V5H8zm6 15v-5H10v5h4zm2-3h4v-5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v5h4v-2h8v2z"/>
+</svg>
+</button>
+
+<div id="tab-bar" role="tablist"></div>
+<div id="error" role="alert"></div>
+<div id="csv-container"></div>
+<div id="points-table-section"></div>
+
+<script>
+// ---- Configure the CSV sources here ----
+const CSV_SOURCES = [
+  { label:"Home", source:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQkGFBsNsBPE0XFepMvdt54qhchiN2rXpSppYOGJ9lbyW7WuBH7VQ63_MwnqgtUTaTVP_oUQttVNUx4/pub?gid=1383519151&single=true&output=csv", layout:"home" },
+  { label:"A Grade", source:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQkGFBsNsBPE0XFepMvdt54qhchiN2rXpSppYOGJ9lbyW7WuBH7VQ63_MwnqgtUTaTVP_oUQttVNUx4/pub?gid=1967236157&single=true&output=csv" },
+  { label:"B Grade", source:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQkGFBsNsBPE0XFepMvdt54qhchiN2rXpSppYOGJ9lbyW7WuBH7VQ63_MwnqgtUTaTVP_oUQttVNUx4/pub?gid=1967236157&single=true&output=csv" },
+  { label:"Area Selection", source:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQkGFBsNsBPE0XFepMvdt54qhchiN2rXpSppYOGJ9lbyW7WuBH7VQ63_MwnqgtUTaTVP_oUQttVNUx4/pub?gid=1967236157&single=true&output=csv", showPointsTable:false }
+];
+
+// ---- Configure the Home program list columns here ----
+const HOME_STAGE_COLUMN = "Stage";
+const HOME_CURRENT_COLUMN = "Current Item";
+const HOME_CURRENT_LABEL = "Current Item";
+const HOME_NEXT_COLUMN = "Next Item";
+const HOME_NEXT_LABEL = "Next Item";
+const HOME_TIME_COLUMN = "Time";
+
+// ---- Configure merged/grouping columns here ----
+const MERGED_COLUMNS = ["Grade","Item","Stage"];
+
+// ---- Configure total points table here ----
+const POINTS_GROUP_COLUMN = "Church";
+const PRIZE_COLUMN = "Prize";
+const PRIZE_POINTS = { First:5, Second:3, Third:1 };
+
+// ---- Configure column order/visibility here ----
+const COLUMN_ORDER = ["Prize"];
+const HIDDEN_HEADER_COLUMNS = ["Prize"];
+
+// ---- Configure per-column value transforms here ----
+const COLUMN_VALUE_TRANSFORMS = {
+  Prize:{
+    First:"🥇 First",
+    Second:"🥈 Second",
+    Third:"🥉 Third"
+  }
+};
+
+function parseCSV(text){
+  const rows=[];
+  let row=[];
+  let field="";
+  let inQuotes=false;
+
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){
+        if(text[i+1]==='"'){field+='"';i++}
+        else inQuotes=false;
+      }else field+=c;
+    }else{
+      if(c==='"') inQuotes=true;
+      else if(c===','){row.push(field);field="";}
+      else if(c==='\r'){}
+      else if(c==='\n'){row.push(field);rows.push(row);row=[];field="";}
+      else field+=c;
+    }
+  }
+  if(field.length>0 || row.length>0){row.push(field);rows.push(row)}
+  return rows.filter(r=>r.length>1 || r[0]!=="");
+}
+
+// Forward-fills blank cells in merged columns.
+function forwardFillMergedColumns(headers,dataRows,mergedColumns){
+  const mergedIndexes=mergedColumns.map(name=>headers.indexOf(name)).filter(idx=>idx!==-1);
+  const lastValues={};
+  return dataRows.map(row=>{
+    const filled=row.slice();
+    mergedIndexes.forEach(idx=>{
+      if(filled[idx]!==undefined && filled[idx].trim()!=="") lastValues[idx]=filled[idx];
+      else filled[idx]=lastValues[idx]!==undefined?lastValues[idx]:"";
+    });
+    return filled;
+  });
+}
+
+// Recursively group rows by merged columns.
+function groupRows(headers,dataRows,mergedIndexes,level){
+  if(level>=mergedIndexes.length) return {type:"rows",rows:dataRows};
+  const colIndex=mergedIndexes[level];
+  const groups=[];
+  const groupMap=new Map();
+
+  dataRows.forEach(row=>{
+    const key=row[colIndex];
+    if(!groupMap.has(key)){
+      const group={type:"group",key,level,rows:[]};
+      groupMap.set(key,group);groups.push(group);
+    }
+    groupMap.get(key).rows.push(row);
+  });
+
+  groups.forEach(group=>{
+    group.children=groupRows(headers,group.rows,mergedIndexes,level+1);
+    delete group.rows;
+  });
+  return {type:"groups",groups};
+}
+
+function reorderColumnIndexes(headers,columnIndexes){
+  const priority=COLUMN_ORDER.map(name=>headers.indexOf(name)).filter(idx=>columnIndexes.includes(idx));
+  const rest=columnIndexes.filter(idx=>!priority.includes(idx));
+  return [...priority,...rest];
+}
+
+function buildTable(headerLabels,bodyRows){
+  const wrap=document.createElement("div");
+  wrap.className="table-wrap";
+  const table=document.createElement("table");
+  const thead=document.createElement("thead");
+  const headerRow=document.createElement("tr");
+
+  headerLabels.forEach(label=>{
+    const th=document.createElement("th");
+    th.textContent=label;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody=document.createElement("tbody");
+  bodyRows.forEach(row=>{
+    const tr=document.createElement("tr");
+    row.forEach(value=>{
+      const td=document.createElement("td");
+      td.textContent=value;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function transformColumnValue(columnName,value){
+  const map=COLUMN_VALUE_TRANSFORMS[columnName];
+  if(!map) return value;
+  const trimmed=value.trim();
+  const matchedKey=Object.keys(map).find(key=>key.toLowerCase()===trimmed.toLowerCase());
+  return matchedKey!==undefined ? map[matchedKey] : value;
+}
+
+function buildLeafTable(headers,leafColumnIndexes,rows){
+  const orderedIndexes=reorderColumnIndexes(headers,leafColumnIndexes);
+  const headerLabels=orderedIndexes.map(idx=>HIDDEN_HEADER_COLUMNS.includes(headers[idx])?"":headers[idx]);
+  const bodyRows=rows.map(row=>orderedIndexes.map(idx=>{
+    const value=row[idx]!==undefined?row[idx]:"";
+    return transformColumnValue(headers[idx],value);
+  }));
+  return buildTable(headerLabels,bodyRows);
+}
+
+function buildAccordionNode(headers,leafColumnIndexes,node){
+  if(node.type==="rows") return buildLeafTable(headers,leafColumnIndexes,node.rows);
+
+  const container=document.createDocumentFragment();
+  node.groups.forEach(group=>{
+    const item=document.createElement("div");
+    item.className="accordion-item level-"+group.level;
+
+    const heading=document.createElement("div");
+    heading.className="accordion-heading";
+    heading.textContent=group.key;
+    item.appendChild(heading);
+
+    const body=document.createElement("div");
+    body.className="accordion-body";
+    body.appendChild(buildAccordionNode(headers,leafColumnIndexes,group.children));
+    item.appendChild(body);
+
+    container.appendChild(item);
+  });
+  return container;
+}
+
+// Renders the Home tab as cards.
+function renderHomeProgramList(rows){
+  const container=document.getElementById("csv-container");
+  container.innerHTML="";
+  if(rows.length===0) return;
+
+  const headers=rows[0].map(h=>h.trim());
+  const dataRows=rows.slice(1);
+  const stageIdx=headers.indexOf(HOME_STAGE_COLUMN);
+  const currentIdx=headers.indexOf(HOME_CURRENT_COLUMN);
+  const nextIdx=headers.indexOf(HOME_NEXT_COLUMN);
+  const timeIdx=headers.indexOf(HOME_TIME_COLUMN);
+
+  const list=document.createElement("div");
+  list.className="home-program-list";
+
+  dataRows.forEach(row=>{
+    const stage=(row[stageIdx]||"").trim();
+    const current=(row[currentIdx]||"").trim();
+    const next=(row[nextIdx]||"").trim();
+    const time=(row[timeIdx]||"").trim();
+    if(!stage) return;
+
+    const card=document.createElement("div");
+    card.className="home-program-card";
+
+    const stageEl=document.createElement("div");
+    stageEl.className="home-program-stage";
+    stageEl.textContent=stage;
+    card.appendChild(stageEl);
+
+    const body=document.createElement("div");
+    body.className="home-program-body";
+
+    if(current){
+      const row1=document.createElement("div");
+      row1.className="home-program-row home-program-ongoing";
+      const label=document.createElement("span");
+      label.className="home-program-label";
+      label.textContent=HOME_CURRENT_LABEL;
+      const value=document.createElement("span");
+      value.className="home-program-value";
+      value.textContent=current;
+      row1.append(label,value);
+      body.appendChild(row1);
+    }
+    if(next){
+      const row2=document.createElement("div");
+      row2.className="home-program-row home-program-upcoming";
+      const label=document.createElement("span");
+      label.className="home-program-label";
+      label.textContent=HOME_NEXT_LABEL;
+      const value=document.createElement("span");
+      value.className="home-program-value";
+      value.textContent=next;
+      row2.append(label,value);
+      body.appendChild(row2);
+    }
+    if(time){
+      const timeEl=document.createElement("div");
+      timeEl.className="home-program-time";
+      timeEl.textContent=time;
+      body.appendChild(timeEl);
+    }
+
+    card.appendChild(body);
+    list.appendChild(card);
+  });
+  container.appendChild(list);
+}
+
+function renderTable(rows,showPointsTable){
+  const container=document.getElementById("csv-container");
+  container.innerHTML="";
+  if(rows.length===0) return;
+
+  const headers=rows[0];
+  const dataRows=rows.slice(1);
+  const mergedIndexes=MERGED_COLUMNS.map(name=>headers.indexOf(name)).filter(idx=>idx!==-1);
+
+  if(mergedIndexes.length===0){
+    container.appendChild(buildTable(headers,headers.map((_,i)=>i).map(i=>dataRows.map(r=>r[i]||"")).reduce((acc,col)=>acc,[])));
+  }else{
+    const filledRows=forwardFillMergedColumns(headers,dataRows,MERGED_COLUMNS);
+    const leafColumnIndexes=headers.map((_,i)=>i).filter(i=>!mergedIndexes.includes(i));
+    const tree=groupRows(headers,filledRows,mergedIndexes,0);
+    container.appendChild(buildAccordionNode(headers,leafColumnIndexes,tree));
+    if(showPointsTable) renderPointsTable(headers,filledRows);
+    else document.getElementById("points-table-section").innerHTML="";
+  }
+}
+
+function computePointsTotals(headers,dataRows){
+  const groupIndex=headers.indexOf(POINTS_GROUP_COLUMN);
+  const prizeIndex=headers.indexOf(PRIZE_COLUMN);
+  if(groupIndex===-1 || prizeIndex===-1) return null;
+
+  const prizeNames=Object.keys(PRIZE_POINTS);
+  const totals=new Map();
+
+  dataRows.forEach(row=>{
+    const group=row[groupIndex]!==undefined?row[groupIndex].trim():"";
+    if(!group) return;
+    const groupKey=group.toLowerCase();
+
+    if(!totals.has(groupKey)){
+      const counts={};
+      prizeNames.forEach(name=>counts[name]=0);
+      totals.set(groupKey,{label:group,counts});
+    }
+
+    const prize=row[prizeIndex]!==undefined?row[prizeIndex].trim():"";
+    const matchedName=prizeNames.find(name=>name.toLowerCase()===prize.toLowerCase());
+    if(matchedName) totals.get(groupKey).counts[matchedName]++;
+  });
+
+  return Array.from(totals.values()).map(({label,counts})=>{
+    const points=prizeNames.reduce((sum,name)=>sum+counts[name]*PRIZE_POINTS[name],0);
+    return {group:label,counts,points};
+  }).sort((a,b)=>b.points-a.points);
+}
+
+function renderPointsTable(headers,dataRows){
+  const section=document.getElementById("points-table-section");
+  section.innerHTML="";
+  const totals=computePointsTotals(headers,dataRows);
+  if(!totals || totals.length===0) return;
+
+  const prizeNames=Object.keys(PRIZE_POINTS);
+  const heading=document.createElement("h2");
+  heading.textContent="Points Table";
+  section.appendChild(heading);
+
+  const headerLabels=[POINTS_GROUP_COLUMN,...prizeNames,"Points"];
+  const bodyRows=totals.map(entry=>[
+    entry.group,...prizeNames.map(name=>entry.counts[name]),entry.points
+  ]);
+  section.appendChild(buildTable(headerLabels,bodyRows));
+}
+
+
+let activeIndex=0;
+const sourceState=CSV_SOURCES.map(cfg=>({
+  cfg,status:"idle",rows:null,errorMessage:null
+}));
+
+function buildTabBar(){
+  const tabBar=document.getElementById("tab-bar");
+  tabBar.innerHTML="";
+  CSV_SOURCES.forEach((cfg,index)=>{
+    const btn=document.createElement("button");
+    btn.type="button";
+    btn.className="tab-btn"+(index===activeIndex?" active":"");
+    btn.textContent=cfg.label;
+    btn.setAttribute("role","tab");
+    btn.setAttribute("aria-selected",index===activeIndex?"true":"false");
+    btn.addEventListener("click",()=>selectTab(index));
+    tabBar.appendChild(btn);
+  });
+}
+
+function selectTab(index){
+  activeIndex=index;
+  buildTabBar();
+  renderActiveTab();
+}
+
+function renderActiveTab(){
+  const errorEl=document.getElementById("error");
+  errorEl.textContent="";
+  document.getElementById("csv-container").innerHTML="";
+  document.getElementById("points-table-section").innerHTML="";
+
+  const state=sourceState[activeIndex];
+  document.body.classList.toggle("home-active",state.cfg.layout==="home");
+
+  if(state.status==="error"){
+    errorEl.textContent=state.errorMessage;
+  }else if(state.status==="loaded"){
+    if(state.cfg.layout==="home") renderHomeProgramList(state.rows);
+    else renderTable(state.rows,state.cfg.showPointsTable!==false);
+  }else{
+    document.getElementById("csv-container").textContent="Loading...";
+  }
+}
+
+function fetchSource(index){
+  const state=sourceState[index];
+  const isRemote=/^https?:\/\//i.test(state.cfg.source);
+  const resolvedUrl=  state.cfg.source ;
+
+  state.status="loading";
+  if(index===activeIndex) renderActiveTab();
+
+  fetch(resolvedUrl)
+    .then(response=>{
+      if(!response.ok) throw new Error("HTTP "+response.status);
+      return response.text();
+    })
+    .then(text=>{
+      state.status="loaded";
+      state.rows=parseCSV(text);
+      if(index===activeIndex) renderActiveTab();
+    })
+    .catch(err=>{
+      const hint=isRemote
+        ?"Make sure the Google Sheet is shared as “Anyone with the link can view”."
+        :"If you opened this file directly, serve it via a local web server (e.g. “npx serve” or “python -m http.server”) since browsers block fetch() on file:// URLs.";
+      state.status="error";
+      state.errorMessage="Could not load "+state.cfg.label+" ("+err.message+"). "+hint;
+      if(index===activeIndex) renderActiveTab();
+    });
+}
+
+document.getElementById("print-btn").addEventListener("click",()=>window.print());
+
+buildTabBar();
+renderActiveTab();
+CSV_SOURCES.forEach((_,index)=>fetchSource(index));
+</script>
 </body>
 </html>
