@@ -742,7 +742,7 @@
         function fetchSource(index) {
             const state = sourceState[index];
             const isRemote = /^https?:\/\//i.test(state.cfg.source);
-            const resolvedUrl = state.cfg.source;
+            const resolvedUrl = state.cfg.source + "&"+'_=' + Date.now();
 
             state.status = "loading";
             if (index === activeIndex) renderActiveTab();
